@@ -1,103 +1,577 @@
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบลงทะเบียนเลขประจำตัวประชาชน</title>
+
+  <title>ยืนยันการเชื่อมต่อ LINE | ระบบนัดหมายออนไลน์</title>
+
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
   <style>
-    body { font-family: sans-serif; padding: 20px; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-    .container { width: 100%; max-width: 400px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); box-sizing: border-box; }
-    input { width: 100%; padding: 10px; margin: 10px 0 20px 0; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-    button { width: 100%; padding: 10px; background-color: #06C755; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
-    button:disabled { background-color: #ccc; cursor: not-allowed; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>ลงทะเบียนข้อมูล</h2>
-    <form id="regForm">
-      <label><strong>ชื่อผู้ใช้ LINE:</strong> <span id="displayName" style="color: #666;">กำลังโหลด...</span></label><br><br>
-      <label for="nationalId"><strong>เลขประจำตัวประชาชน (13 หลัก):</strong></label>
-      <input type="text" id="nationalId" maxlength="13" pattern="[0-9]{13}" placeholder="กรอกเลข 13 หลัก" required>
-      <button type="submit" id="submitBtn" disabled>กำลังโหลดโปรไฟล์...</button>
-    </form>
-  </div>
+    * {
+      box-sizing: border-box;
+    }
 
-  <script>
-    const LIFF_ID = "2011998356-6bSueWw1"; // ใส่ LIFF ID ของคุณที่นี่
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzeQ0hSt0PTpJU6d9GuHwXoLY1DuIoQQTpxhrGee0ruFr-_i4KwSz2mzgCz7xZ3Ey-B/exec"; // ใส่ URL /exec ของ Google Apps Script
+    body {
+      margin: 0;
+      padding: 20px 16px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f3f7fb;
+      font-family: Arial, Tahoma, sans-serif;
+      color: #243447;
+    }
 
-    async function main() {
-      const statusEl = document.getElementById('displayName');
-      const submitBtn = document.getElementById('submitBtn');
+    .container {
+      width: 100%;
+      max-width: 440px;
+      padding: 30px 24px;
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      text-align: center;
+    }
 
-      try {
-        await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) {
-          liff.login();
-          return;
-        }
-        const profile = await liff.getProfile();
-        statusEl.innerText = profile.displayName;
-        statusEl.style.color = "#000";
-        window.userProfile = profile;
-        
-        submitBtn.disabled = false;
-        submitBtn.innerText = 'บันทึกข้อมูล';
-      } catch (error) {
-        console.error(error);
-        statusEl.innerText = 'เกิดข้อผิดพลาดในการโหลด LINE';
+    .logo {
+      font-size: 52px;
+      margin-bottom: 12px;
+    }
+
+    h2 {
+      font-size: 21px;
+      margin: 8px 0 12px;
+    }
+
+    .subtitle {
+      color: #718096;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    #message {
+      min-height: 70px;
+      padding: 16px;
+      background: #f7fafc;
+      border-radius: 10px;
+      color: #526273;
+      font-size: 15px;
+      line-height: 1.8;
+      white-space: pre-line;
+      overflow-wrap: anywhere;
+    }
+
+    .profile {
+      display: none;
+      margin: 20px 0;
+      padding: 14px;
+      background: #f0fff4;
+      border: 1px solid #c6f6d5;
+      border-radius: 12px;
+      text-align: left;
+    }
+
+    .profile-name {
+      font-weight: bold;
+      color: #22543d;
+      margin-bottom: 5px;
+    }
+
+    .profile-status {
+      color: #276749;
+      font-size: 13px;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      margin-top: 20px;
+      border: none;
+      border-radius: 10px;
+      background: #06c755;
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .footer {
+      margin-top: 24px;
+      color: #a0aec0;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 17px;
+      height: 17px;
+      border: 2px solid #d1d5db;
+      border-top-color: #06c755;
+      border-radius: 50%;
+      vertical-align: middle;
+      margin-right: 8px;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
       }
     }
-    main();
+  </style>
+</head>
 
-    document.getElementById('regForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      if (!window.userProfile) {
-        alert('ยังโหลดข้อมูล LINE ไม่เสร็จ');
-        return;
+<body>
+
+  <div class="container">
+
+    <div class="logo">🏥</div>
+
+    <h2>ระบบนัดหมายออนไลน์</h2>
+
+    <div class="subtitle">
+      ยืนยันการเชื่อมต่อบัญชี LINE กับข้อมูลผู้ป่วย
+    </div>
+
+    <div id="message">
+      <span class="loading"></span>
+      กำลังตรวจสอบข้อมูล กรุณารอสักครู่...
+    </div>
+
+    <div id="profile" class="profile">
+      <div class="profile-name">
+        LINE: <span id="displayName">-</span>
+      </div>
+
+      <div class="profile-status">
+        ยืนยันตัวตน LINE สำเร็จ
+      </div>
+    </div>
+
+    <button
+      id="confirmButton"
+      type="button"
+      style="display:none"
+      onclick="confirmRegistration()">
+
+      ยืนยันเชื่อมบัญชี LINE
+
+    </button>
+
+    <div class="footer">
+      รพ.สต.บ้านหนองแวงใต้
+      <br>
+      ระบบนัดหมายออนไลน์
+    </div>
+
+  </div>
+
+<script>
+'use strict';
+
+/* =====================================
+   CONFIGURATION
+===================================== */
+
+const LIFF_ID = '2011998356-6bSueWw1';
+
+const GAS_API_URL =
+  'https://script.google.com/macros/s/AKfycbyFww1ivNAWexQtYqd491RT15ZwicvCxqLH9pl-eCOW0n9jrIQpoI4cOw8sGG7ed0iO/exec';
+
+
+/* =====================================
+   GLOBAL VARIABLES
+===================================== */
+
+let registrationToken = '';
+let idToken = '';
+let lineDisplayName = '';
+
+let isSubmitting = false;
+
+
+/* =====================================
+   UI FUNCTIONS
+===================================== */
+
+function showMessage(message) {
+
+  document.getElementById('message').textContent = message;
+
+}
+
+function showLoading(message) {
+
+  document.getElementById('message').innerHTML =
+    '<span class="loading"></span>' + message;
+
+}
+
+function showError(message) {
+
+  showMessage('ไม่สามารถดำเนินการได้\n' + message);
+
+  document.getElementById('confirmButton').style.display = 'none';
+
+}
+
+function showProfile(displayName) {
+
+  document.getElementById('displayName').textContent =
+    displayName || '-';
+
+  document.getElementById('profile').style.display = 'block';
+
+}
+
+
+/* =====================================
+   READ REGISTRATION TOKEN
+===================================== */
+
+function getRegistrationToken() {
+
+  const params = new URLSearchParams(
+    window.location.search
+  );
+
+  // รูปแบบ ?t=TOKEN
+  let token = params.get('t');
+
+  if (token) {
+    return token.trim();
+  }
+
+  // กรณี LINE ส่งข้อมูลผ่าน liff.state
+  const state = params.get('liff.state');
+
+  if (state) {
+
+    try {
+
+      const stateURL = new URL(
+        state,
+        window.location.origin
+      );
+
+      token = stateURL.searchParams.get('t');
+
+      if (token) {
+        return token.trim();
       }
 
-      const nationalId = document.getElementById('nationalId').value;
-      if (nationalId.length !== 13) {
-        alert('กรุณากรอกเลขประจำตัวประชาชนให้ครบ 13 หลัก');
-        return;
+    } catch (error) {
+
+      console.warn('Cannot parse LIFF state');
+
+    }
+
+    // รองรับ state ที่เป็น query string โดยตรง
+    try {
+
+      const stateParams = new URLSearchParams(
+        state.startsWith('?')
+          ? state.substring(1)
+          : state
+      );
+
+      token = stateParams.get('t');
+
+      if (token) {
+        return token.trim();
       }
 
-      const submitBtn = document.getElementById('submitBtn');
-      submitBtn.disabled = true;
-      submitBtn.innerText = 'กำลังบันทึก...';
+    } catch (error) {
 
-      const data = {
-        userLineId: window.userProfile.userId,
-        displayName: window.userProfile.displayName,
-        nationalId: nationalId
-      };
+      console.warn('Cannot parse LIFF state parameters');
 
-      try {
-        const response = await fetch(WEB_APP_URL, {
-          method: 'POST',
-          body: JSON.stringify(data),
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' } // ใช้ text/plain ป้องกันปัญหา CORS ของ Google Apps Script
-        });
-        const result = await response.json();
-        
-        if (result.status === 'success') {
-          alert('บันทึกข้อมูลสำเร็จ!');
-          liff.closeWindow();
-        } else {
-          alert('เกิดข้อผิดพลาดในการบันทึก');
-          submitBtn.disabled = false;
-          submitBtn.innerText = 'บันทึกข้อมูล';
-        }
-      } catch (err) {
-        console.error(err);
-        alert('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
-        submitBtn.disabled = false;
-        submitBtn.innerText = 'บันทึกข้อมูล';
-      }
+    }
+  }
+
+  return '';
+
+}
+
+
+/* =====================================
+   INITIALIZE LIFF
+===================================== */
+
+async function initializeLIFF() {
+
+  try {
+
+    showLoading('กำลังโหลด LINE LIFF...');
+
+    if (typeof liff === 'undefined') {
+
+      throw new Error(
+        'ไม่สามารถโหลด LINE LIFF SDK ได้'
+      );
+
+    }
+
+    showLoading('กำลังเริ่มต้น LIFF...');
+
+    await liff.init({
+      liffId: LIFF_ID
     });
-  </script>
+
+    showLoading('กำลังตรวจสอบรหัสลงทะเบียน...');
+
+    registrationToken = getRegistrationToken();
+
+    if (!registrationToken) {
+
+      throw new Error(
+        'ไม่พบรหัสลงทะเบียน กรุณาสแกน QR Code ใหม่'
+      );
+
+    }
+
+    if (registrationToken.length > 200) {
+
+      throw new Error(
+        'รหัสลงทะเบียนไม่ถูกต้อง'
+      );
+
+    }
+
+    if (!liff.isInClient()) {
+
+      showError(
+        'กรุณาเปิดลิงก์นี้ผ่านแอป LINE'
+      );
+
+      return;
+
+    }
+
+    if (!liff.isLoggedIn()) {
+
+      showLoading('กำลังเข้าสู่ระบบ LINE...');
+
+      liff.login();
+
+      return;
+
+    }
+
+    showLoading('กำลังตรวจสอบตัวตน LINE...');
+
+    // อ่าน ID Token สำหรับส่งให้ Apps Script ตรวจสอบ
+    idToken = liff.getIDToken();
+
+    if (!idToken) {
+
+      throw new Error(
+        'ไม่พบ ID Token กรุณาตรวจสอบ LIFF Scope openid'
+      );
+
+    }
+
+    // อ่าน Profile เพื่อแสดงชื่อเท่านั้น
+    // ไม่ใช้ Profile เป็นหลักฐานยืนยันตัวตน
+    const profile = await liff.getProfile();
+
+    lineDisplayName = profile.displayName || '';
+
+    showProfile(lineDisplayName);
+
+    showMessage(
+      'ยืนยันตัวตน LINE สำเร็จ\n' +
+      'กรุณากดปุ่มด้านล่างเพื่อเชื่อมบัญชี LINE กับข้อมูลผู้ป่วย'
+    );
+
+    const button = document.getElementById(
+      'confirmButton'
+    );
+
+    button.style.display = 'block';
+    button.disabled = false;
+    button.textContent = 'ยืนยันเชื่อมบัญชี LINE';
+
+  } catch (error) {
+
+    console.error(
+      'LIFF Initialization Error:',
+      error
+    );
+
+    showError(
+      error.message || 'ไม่สามารถเริ่มต้นระบบได้'
+    );
+
+  }
+
+}
+
+
+/* =====================================
+   CALL GOOGLE APPS SCRIPT API
+===================================== */
+
+async function completeRegistrationOnServer(
+  token,
+  lineIdToken
+) {
+
+  const response = await fetch(GAS_API_URL, {
+
+    method: 'POST',
+
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8'
+    },
+
+    body: JSON.stringify({
+
+      action: 'COMPLETE_LINE_REGISTRATION',
+
+      token: token,
+
+      idToken: lineIdToken
+
+    }),
+
+    redirect: 'follow'
+
+  });
+
+  if (!response.ok) {
+
+    throw new Error(
+      'HTTP Error: ' + response.status
+    );
+
+  }
+
+  const result = await response.json();
+
+  return result;
+
+}
+
+
+/* =====================================
+   CONFIRM REGISTRATION
+===================================== */
+
+async function confirmRegistration() {
+
+  if (isSubmitting) {
+    return;
+  }
+
+  const button = document.getElementById(
+    'confirmButton'
+  );
+
+  if (!registrationToken) {
+
+    showError(
+      'ไม่พบรหัสลงทะเบียน กรุณาสแกน QR Code ใหม่'
+    );
+
+    return;
+
+  }
+
+  if (!idToken) {
+
+    showError(
+      'ไม่พบข้อมูลยืนยันตัวตน LINE กรุณาเปิดระบบใหม่'
+    );
+
+    return;
+
+  }
+
+  isSubmitting = true;
+
+  button.disabled = true;
+
+  showLoading(
+    'กำลังเชื่อมบัญชี LINE กรุณารอสักครู่...'
+  );
+
+  try {
+
+    const result = await completeRegistrationOnServer(
+      registrationToken,
+      idToken
+    );
+
+    if (result && result.success === true) {
+
+      showMessage(
+        'เชื่อมบัญชี LINE สำเร็จแล้ว\n\n' +
+        'ชื่อ LINE: ' + (result.displayName || lineDisplayName || '-') +
+        '\n\nท่านสามารถปิดหน้านี้ได้'
+      );
+
+      button.style.display = 'none';
+
+      // ล้างข้อมูล Token ออกจากตัวแปรหลังสำเร็จ
+      registrationToken = '';
+      idToken = '';
+
+      isSubmitting = false;
+
+      return;
+
+    }
+
+    throw new Error(
+      result && result.message
+        ? result.message
+        : 'เชื่อมบัญชีไม่สำเร็จ'
+    );
+
+  } catch (error) {
+
+    console.error(
+      'Registration Error:',
+      error
+    );
+
+    showError(
+      error.message ||
+      'ไม่สามารถเชื่อมต่อระบบได้ กรุณาลองใหม่'
+    );
+
+    button.disabled = false;
+
+    isSubmitting = false;
+
+  }
+
+}
+
+
+/* =====================================
+   START APPLICATION
+===================================== */
+
+document.addEventListener(
+  'DOMContentLoaded',
+  function() {
+
+    initializeLIFF();
+
+  }
+);
+
+</script>
+
 </body>
 </html>
