@@ -38,8 +38,9 @@
         }
         const idToken=liff.getIDToken();
         if(!idToken)throw new Error('ไม่พบ ID token กรุณาตรวจว่าเปิด Scope openid แล้ว');
-        const profile=await liff.getProfile().catch(()=>null);
-        authPayload={idToken:idToken,profile:profile?{displayName:profile.displayName||'',pictureUrl:profile.pictureUrl||''}:null};
+        // Keep the stored LINEUserID in Sheets as the booking/notification ID.
+        // The LIFF ID token is sent only for server-side account-match validation.
+        authPayload={idToken:idToken};
         $('bookingFrame').src=BOOKING_WEBAPP_URL;
         $('bookingFrame').classList.remove('hidden');
         $('status').classList.add('hidden');
