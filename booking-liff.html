@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3f8f4">
+  <title>จองคิวนวด | รพ.สต.บ้านหนองแวงใต้</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f3f8f4;color:#20372b;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}.status{max-width:720px;margin:18px auto;padding:18px 16px}.card{background:#fff;border:1px solid #e4ece5;border-radius:18px;padding:20px;box-shadow:0 5px 18px #204c2d0a;line-height:1.6}.error{color:#8d3529;background:#fff3ef;border-color:#f2d0c9}iframe{display:block;width:100%;height:100dvh;border:0;background:#f3f8f4}.hidden{display:none!important}
+  </style>
+</head>
+<body>
+  <main id="status" class="status"><div id="message" class="card">กำลังตรวจสอบบัญชี LINE…</div></main>
+  <iframe id="bookingFrame" class="hidden" title="หน้าจองคิวนวดเพื่อสุขภาพ" allow="camera; microphone"></iframe>
+  <script>
+    'use strict';
+    const LIFF_ID='2011998356-RjxS308N';
+    const BOOKING_WEBAPP_URL='https://script.google.com/macros/s/AKfycbxo1XUsgNPkIH1tecfULXHIfKC-Xtm_EBpQKiitTAK7t-cefcz4c8c9m67EZWByvRVJ/exec?page=booking&embed=1';
+    const $=id=>document.getElementById(id);
+    const setError=message=>{$('message').textContent=message;$('message').classList.add('error');};
+    let authPayload=null;
+    function isBookingFrameWindow(candidate,root){if(candidate===root)return true;try{for(let i=0;i<root.frames.length;i++){if(isBookingFrameWindow(candidate,root.frames[i]))return true;}}catch(error){}return false;}
+    function isGoogleScriptOrigin(origin){try{const host=new URL(origin).hostname;return new URL(origin).protocol==='https:'&&(host==='script.google.com'||host==='script.googleusercontent.com'||host.endsWith('.script.googleusercontent.com'));}catch(error){return false;}}
+    function sendAuth(target,origin){if(!authPayload)return;target.postMessage({type:'RSPT_BOOKING_AUTH',payload:authPayload},origin);}
+    window.addEventListener('message',event=>{
+      const trustedBookingFrame=isBookingFrameWindow(event.source,$('bookingFrame').contentWindow)&&isGoogleScriptOrigin(event.origin);
+      if(trustedBookingFrame&&event.data?.type==='RSPT_BOOKING_READY')sendAuth(event.source,event.origin);
+      if(trustedBookingFrame&&event.data?.type==='RSPT_BOOKING_CLOSE'&&window.liff)liff.closeWindow();
+    });
+    async function start(){
+      try{
+        if(typeof liff==='undefined')throw new Error('โหลด LIFF SDK ไม่สำเร็จ');
+        await Promise.race([liff.init({liffId:LIFF_ID}),new Promise((_,reject)=>setTimeout(()=>reject(new Error('เริ่มต้น LIFF ไม่สำเร็จ กรุณาตรวจ LIFF Endpoint URL ให้เป็น https://piyass.github.io/liff-register/booking-liff.html')),20000))]);
+        if(!liff.isLoggedIn()){
+          if(liff.isInClient())throw new Error('LINE ยังยืนยันบัญชีไม่ได้ กรุณาปิดหน้านี้แล้วเปิดลิงก์จองคิวจากเมนู OA อีกครั้ง');
+          liff.login({redirectUri:location.href});return;
+        }
+        const idToken=liff.getIDToken();
+        if(!idToken)throw new Error('ไม่พบ ID token กรุณาตรวจว่าเปิด Scope openid แล้ว');
+        const profile=await liff.getProfile().catch(()=>null);
+        authPayload={idToken:idToken,profile:profile?{displayName:profile.displayName||'',pictureUrl:profile.pictureUrl||''}:null};
+        $('bookingFrame').src=BOOKING_WEBAPP_URL;
+        $('bookingFrame').classList.remove('hidden');
+        $('status').classList.add('hidden');
+      }catch(error){setError(error.message||'ไม่สามารถเปิดหน้าจองได้ กรุณาลองใหม่');}
+    }
+    start();
+  </script>
+</body>
+</html>
